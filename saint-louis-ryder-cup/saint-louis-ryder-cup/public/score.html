@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Enter Score — Saint Louis Ryder Cup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0d12;
+    --panel: #11161f;
+    --panel-2: #161d28;
+    --line: #222c3a;
+    --ink: #eef2f7;
+    --ink-dim: #93a1b3;
+    --jacob: #e3a82b;
+    --eric: #3b82c4;
+    --red: #e5342b;
+    --green: #33b56a;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100vh; background: var(--bg); color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+  /* ── header ── */
+  .top { background: rgba(10,13,18,.9); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line); padding: 12px 16px;
+    display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 20; }
+  .top .brand { font-family: 'Anton'; text-transform: uppercase; font-size: 14px; letter-spacing: .5px; }
+  .top .sub { font-family: 'Oswald'; font-size: 11px; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--ink-dim); margin-left: auto; }
+
+  .wrap { max-width: 540px; margin: 0 auto; padding: 20px 14px 80px; }
+
+  /* ── step screens ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+  @keyframes fade { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
+  .screen.active { animation: fade .22s ease; }
+
+  h2 { font-family: 'Anton'; text-transform: uppercase; font-size: 22px;
+    letter-spacing: .5px; margin-bottom: 6px; }
+  .hint { font-size: 13px; color: var(--ink-dim); margin-bottom: 20px; line-height: 1.5; }
+
+  /* ── match picker ── */
+  .match-btn {
+    width: 100%; background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 14px 16px; text-align: left;
+    cursor: pointer; color: var(--ink); margin-bottom: 8px;
+    display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px;
+    transition: border-color .15s;
+  }
+  .match-btn:hover, .match-btn:focus { border-color: var(--ink-dim); outline: none; }
+  .match-btn .names { font-weight: 600; font-size: 15px; line-height: 1.3; }
+  .match-btn .names .j { color: var(--jacob); }
+  .match-btn .names .e { color: var(--eric); }
+  .match-btn .day-tag { font-family: 'Oswald'; font-size: 11px; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--ink-dim); white-space: nowrap; }
+  .match-btn .score-preview { font-family: 'Oswald'; font-weight: 700; font-size: 15px; }
+  .match-btn.done { border-color: rgba(51,181,106,.3); }
+  .match-btn .check { color: var(--green); font-size: 13px; }
+
+  /* ── PIN entry ── */
+  .pin-box { background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 24px 20px; text-align: center; }
+  .pin-label { font-family: 'Oswald'; font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--ink-dim); margin-bottom: 14px; }
+  .pin-input { width: 100%; max-width: 200px; text-align: center;
+    background: var(--panel-2); border: 2px solid var(--line); color: var(--ink);
+    font-family: 'Oswald'; font-weight: 600; font-size: 32px; letter-spacing: 10px;
+    padding: 12px; border-radius: 10px; outline: none; }
+  .pin-input:focus { border-color: var(--jacob); }
+  .pin-err { color: var(--red); font-size: 13px; margin-top: 10px; font-family: 'Oswald'; min-height: 20px; }
+
+  /* ── hole grid ── */
+  .match-info { background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 18px;
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+  .mi-side { text-align: center; }
+  .mi-name { font-family: 'Anton'; font-size: 16px; text-transform: uppercase; letter-spacing: .3px; }
+  .mi-side.j .mi-name { color: var(--jacob); }
+  .mi-side.e .mi-name { color: var(--eric); }
+  .mi-sub { font-size: 11px; color: var(--ink-dim); font-family: 'Oswald';
+    letter-spacing: .5px; text-transform: uppercase; margin-top: 3px; }
+  .mi-vs { text-align: center; font-family: 'Anton'; font-size: 14px; color: var(--ink-dim); }
+  .mi-score { font-family: 'Oswald'; font-weight: 700; font-size: 28px;
+    font-variant-numeric: tabular-nums; }
+  .mi-side.j .mi-score { color: var(--jacob); }
+  .mi-side.e .mi-score { color: var(--eric); }
+
+  .nine-label { font-family: 'Oswald'; font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--ink-dim); margin: 16px 0 8px; }
+
+  .hole-row {
+    display: grid; grid-template-columns: 52px 1fr; gap: 10px;
+    align-items: center; margin-bottom: 8px;
+  }
+  .hn { font-family: 'Oswald'; font-weight: 600; font-size: 14px; color: var(--ink); }
+  .hn small { color: var(--ink-dim); font-size: 10px; font-weight: 400;
+    text-transform: uppercase; letter-spacing: .5px; margin-left: 3px; }
+  .hbtns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .hb {
+    padding: 12px 0; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--panel-2); color: var(--ink-dim); font-family: 'Oswald';
+    font-weight: 700; font-size: 15px; cursor: pointer; text-align: center;
+    transition: background .12s, border-color .12s, color .12s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .hb:active { transform: scale(.96); }
+  .hb.j.on  { background: var(--jacob); color: #0a0d12; border-color: var(--jacob); }
+  .hb.hlv.on { background: var(--ink-dim); color: #0a0d12; border-color: var(--ink-dim); }
+  .hb.e.on  { background: var(--eric); color: #fff; border-color: var(--eric); }
+
+  .status-bar { position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(10,13,18,.95); border-top: 1px solid var(--line);
+    padding: 12px 16px; display: flex; align-items: center; gap: 12px; z-index: 30; }
+  .progress { flex: 1; height: 6px; background: var(--panel-2); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--green); border-radius: 999px; transition: width .3s; }
+  .prog-label { font-family: 'Oswald'; font-size: 12px; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--ink-dim); white-space: nowrap; }
+  .submit-btn {
+    background: var(--green); color: #0a0d12; font-family: 'Oswald'; font-weight: 700;
+    font-size: 13px; letter-spacing: 1px; text-transform: uppercase;
+    border: none; border-radius: 999px; padding: 10px 20px; cursor: pointer;
+    white-space: nowrap; transition: opacity .15s;
+  }
+  .submit-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .submit-btn.saving { opacity: .6; }
+
+  /* ── buttons ── */
+  .btn { display: block; width: 100%; border-radius: 999px; font-family: 'Oswald';
+    font-weight: 600; font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 13px; border: none; cursor: pointer; text-align: center; margin-top: 14px; }
+  .btn-primary { background: var(--jacob); color: #0a0d12; }
+  .btn-ghost { background: var(--panel); border: 1px solid var(--line); color: var(--ink-dim); }
+  .btn:hover { opacity: .88; }
+
+  /* ── done screen ── */
+  .done-card { background: var(--panel); border: 1px solid rgba(51,181,106,.3);
+    border-radius: var(--radius); padding: 28px 20px; text-align: center; margin-top: 20px; }
+  .done-icon { font-size: 48px; margin-bottom: 10px; }
+  .done-score { font-family: 'Oswald'; font-weight: 700; font-size: 36px; margin: 10px 0; }
+  .done-sub { color: var(--ink-dim); font-size: 14px; }
+
+  .empty-msg { text-align: center; color: var(--ink-dim); padding: 40px 20px;
+    font-family: 'Oswald'; font-size: 14px; letter-spacing: .5px; }
+  .loader { text-align: center; padding: 40px; color: var(--ink-dim);
+    font-family: 'Oswald'; letter-spacing: 1px; text-transform: uppercase; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">⛳ Saint Louis Ryder Cup</div>
+  <div class="sub" id="topSub">Score Entry</div>
+</header>
+
+<div class="wrap">
+
+  <!-- SCREEN 1: pick your match -->
+  <div class="screen active" id="scrPick">
+    <h2>Your Match</h2>
+    <p class="hint">Tap your pairing to enter hole-by-hole scores.</p>
+    <div id="matchList"><div class="loader">Loading matchups…</div></div>
+    <button class="btn btn-ghost" style="margin-top:24px" onclick="loadMatches()">↻ Refresh</button>
+    <p style="font-size:12px;color:var(--ink-dim);text-align:center;margin-top:24px;line-height:1.6">
+      You'll need your 4-character match PIN to enter scores.<br>The host will share it before your round.
+    </p>
+  </div>
+
+  <!-- SCREEN 2: PIN entry -->
+  <div class="screen" id="scrPin">
+    <h2>Enter Match PIN</h2>
+    <p class="hint" id="pinMatchLabel">Enter the 4-character PIN for your match.</p>
+    <div class="pin-box">
+      <div class="pin-label">4-Character Match PIN</div>
+      <input class="pin-input" id="pinInput" type="text" inputmode="text"
+             maxlength="4" placeholder="••••" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div class="pin-err" id="pinErr"></div>
+    </div>
+    <button class="btn btn-primary" onclick="checkPin()">Unlock →</button>
+    <button class="btn btn-ghost" onclick="showScreen('scrPick')">← Back</button>
+  </div>
+
+  <!-- SCREEN 3: hole-by-hole entry -->
+  <div class="screen" id="scrHoles">
+    <div class="match-info" id="matchInfo"><!-- filled by JS --></div>
+    <div class="nine-label">Front Nine — Holes 1–9</div>
+    <div id="frontNine"><!-- filled by JS --></div>
+    <div class="nine-label" style="margin-top:20px">Back Nine — Holes 10–18</div>
+    <div id="backNine"><!-- filled by JS --></div>
+    <div style="height:80px"></div><!-- spacer for fixed bar -->
+  </div>
+
+  <!-- SCREEN 4: done -->
+  <div class="screen" id="scrDone">
+    <div class="done-card">
+      <div class="done-icon">🏆</div>
+      <h2>Scores Submitted</h2>
+      <div class="done-score" id="doneScore"></div>
+      <div class="done-sub" id="doneSub">Scoreboard has been updated. Nice round!</div>
+    </div>
+    <button class="btn btn-ghost" onclick="showScreen('scrPick'); loadMatches();" style="margin-top:20px">← Back to matches</button>
+    <a href="/" class="btn btn-ghost" style="display:block;margin-top:8px;text-decoration:none;text-align:center;
+      padding:13px;border-radius:999px;background:var(--panel);border:1px solid var(--line);
+      color:var(--ink-dim);font-family:'Oswald';font-weight:600;font-size:14px;letter-spacing:1.5px;text-transform:uppercase">
+      View Scoreboard ↗
+    </a>
+  </div>
+
+</div><!-- .wrap -->
+
+<!-- fixed bottom status bar (holes screen only) -->
+<div class="status-bar" id="statusBar" style="display:none">
+  <div class="progress"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <span class="prog-label" id="progLabel">0/18</span>
+  <button class="submit-btn" id="submitBtn" onclick="submitScores()" disabled>Submit</button>
+</div>
+
+<script>
+const BASE = "";  // same origin
+
+let allMatches = [], allDays = [], allTeams = {};
+let activeMatch = null;
+let holes = Array(18).fill(null);
+let matchPin = "";
+
+/* ── fetch match list ── */
+async function loadMatches() {
+  document.getElementById("matchList").innerHTML = '<div class="loader">Loading…</div>';
+  try {
+    const r = await fetch(`${BASE}/api/matches`);
+    const data = await r.json();
+    allMatches = data.matches || [];
+    allDays    = data.days    || [];
+    allTeams   = data.teams   || {};
+    renderMatchList();
+  } catch(e) {
+    document.getElementById("matchList").innerHTML =
+      '<div class="empty-msg">Could not reach server. Are you on the right network?</div>';
+  }
+}
+
+function renderMatchList() {
+  const el = document.getElementById("matchList");
+  if (!allMatches.length) { el.innerHTML = '<div class="empty-msg">No matches set up yet.</div>'; return; }
+
+  const jName = allTeams.j ? allTeams.j.name : "Team Jacob";
+  const eName = allTeams.e ? allTeams.e.name : "Team Eric";
+
+  el.innerHTML = allMatches.map(mt => {
+    const day = allDays.find(d => d.id === mt.day) || { name: mt.day };
+    const aNames = mt.a.filter(Boolean).join(" & ") || "TBD";
+    const bNames = mt.b.filter(Boolean).join(" & ") || "TBD";
+    const entered = (mt.holes || []).filter(h => h).length;
+    const hasPa = mt.pa != null;
+    const scoreHtml = hasPa
+      ? `<span class="score-preview">${fmt(mt.pa)} – ${fmt(mt.pb)}</span>`
+      : `<span class="day-tag">${day.format || ""}</span>`;
+    const checkHtml = entered >= 18 ? '<span class="check">✓ Done</span>' : `<span class="day-tag">${entered}/18 holes</span>`;
+    return `<button class="match-btn ${entered>=18?'done':''}" onclick="pickMatch('${mt.id}')">
+      <div>
+        <div class="names">
+          <span class="j">${esc(aNames)}</span>
+          <span style="color:var(--ink-dim);font-size:12px"> vs </span>
+          <span class="e">${esc(bNames)}</span>
+        </div>
+        <div class="day-tag" style="margin-top:4px">${esc(day.name)} · ${esc(day.course||"")}</div>
+      </div>
+      <div style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+        ${scoreHtml}
+        ${checkHtml}
+      </div>
+    </button>`;
+  }).join("");
+}
+
+function pickMatch(id) {
+  const mt = allMatches.find(x => x.id === id);
+  if (!mt) return;
+  activeMatch = mt;
+  // pre-fill hint with match teams
+  const aNames = mt.a.filter(Boolean).join(" & ") || "TBD";
+  const bNames = mt.b.filter(Boolean).join(" & ") || "TBD";
+  document.getElementById("pinMatchLabel").textContent =
+    `Enter the 4-character PIN for: ${aNames} vs ${bNames}`;
+  document.getElementById("pinInput").value = "";
+  document.getElementById("pinErr").textContent = "";
+  showScreen("scrPin");
+  setTimeout(() => document.getElementById("pinInput").focus(), 100);
+}
+
+/* ── PIN check ── */
+async function checkPin() {
+  const pin = document.getElementById("pinInput").value.trim();
+  document.getElementById("pinErr").textContent = "";
+  if (!pin || pin.length < 4) {
+    document.getElementById("pinErr").textContent = "Enter your 4-character PIN";
+    return;
+  }
+  // validate against server
+  try {
+    const r = await fetch(`${BASE}/api/hole`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // send a no-op: holeIndex=0, result = current value (no change), just validate
+      body: JSON.stringify({
+        matchId: activeMatch.id,
+        holeIndex: 0,
+        result: activeMatch.holes[0] || null,
+        matchPin: pin,
+      })
+    });
+    if (r.status === 401) {
+      document.getElementById("pinErr").textContent = "Wrong PIN — check with the host";
+      return;
+    }
+    if (!r.ok) {
+      document.getElementById("pinErr").textContent = "Server error — try again";
+      return;
+    }
+    // PIN is good
+    matchPin = pin;
+    // fetch latest hole state
+    const fresh = await fetch(`${BASE}/api/match/${activeMatch.id}`);
+    const data = await fresh.json();
+    activeMatch = { ...activeMatch, ...data };
+    holes = Array.isArray(data.holes) ? [...data.holes] : Array(18).fill(null);
+    buildHoleUI();
+    showScreen("scrHoles");
+  } catch(e) {
+    document.getElementById("pinErr").textContent = "Cannot reach server";
+  }
+}
+
+document.getElementById("pinInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") checkPin();
+});
+
+/* ── hole UI ── */
+const PARS_DEFAULT = [4,4,3,5,4,4,3,4,5, 4,4,3,5,4,4,3,4,5];
+
+function buildHoleUI() {
+  const day = allDays.find(d => d.id === activeMatch.day) || {};
+  const jName = allTeams.j ? allTeams.j.name : "Team Jacob";
+  const eName = allTeams.e ? allTeams.e.name : "Team Eric";
+
+  // match info bar
+  const jNames = (activeMatch.a || []).filter(Boolean).join(" & ") || "TBD";
+  const eNames = (activeMatch.b || []).filter(Boolean).join(" & ") || "TBD";
+  const jScore = activeMatch.pa != null ? fmt(activeMatch.pa) : "–";
+  const eScore = activeMatch.pb != null ? fmt(activeMatch.pb) : "–";
+  document.getElementById("matchInfo").innerHTML = `
+    <div class="mi-side j">
+      <div class="mi-name">${esc(jNames)}</div>
+      <div class="mi-sub">${esc(jName.replace("Team ",""))}</div>
+      <div class="mi-score">${jScore}</div>
+    </div>
+    <div class="mi-vs">VS</div>
+    <div class="mi-side e">
+      <div class="mi-name">${esc(eNames)}</div>
+      <div class="mi-sub">${esc(eName.replace("Team ",""))}</div>
+      <div class="mi-score">${eScore}</div>
+    </div>`;
+
+  document.getElementById("topSub").textContent = `${jNames} vs ${eNames}`;
+
+  // build hole rows
+  const jLabel = (allTeams.j && allTeams.j.name || "Jacob").replace("Team ","").slice(0,4);
+  const eLabel = (allTeams.e && allTeams.e.name || "Eric").replace("Team ","").slice(0,4);
+
+  function holeRow(i) {
+    const par = PARS_DEFAULT[i] || 4;
+    const h = holes[i];
+    return `<div class="hole-row" id="hr${i}">
+      <span class="hn">${i+1}<small>p${par}</small></span>
+      <div class="hbtns">
+        <button class="hb j ${h==='j'?'on':''}" onclick="setHole(${i},'j')">${jLabel}</button>
+        <button class="hb hlv ${h==='h'?'on':''}" onclick="setHole(${i},'h')">½</button>
+        <button class="hb e ${h==='e'?'on':''}" onclick="setHole(${i},'e')">${eLabel}</button>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById("frontNine").innerHTML = Array.from({length:9},(_,i)=>holeRow(i)).join("");
+  document.getElementById("backNine").innerHTML  = Array.from({length:9},(_,i)=>holeRow(i+9)).join("");
+
+  updateProgress();
+  document.getElementById("statusBar").style.display = "flex";
+}
+
+function setHole(i, val) {
+  // tap same button again = clear
+  holes[i] = holes[i] === val ? null : val;
+  const row = document.getElementById(`hr${i}`);
+  if (row) {
+    row.querySelectorAll(".hb").forEach(b => {
+      const cls = b.classList.contains("j") ? "j" : b.classList.contains("hlv") ? "h" : "e";
+      b.classList.toggle("on", cls === holes[i]);
+    });
+  }
+  updateProgress();
+  // auto-save to server after a short debounce
+  clearTimeout(setHole._t);
+  setHole._t = setTimeout(() => pushHole(i, holes[i]), 600);
+}
+
+async function pushHole(i, val) {
+  try {
+    await fetch(`${BASE}/api/hole`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ matchId: activeMatch.id, holeIndex: i, result: val, matchPin })
+    });
+  } catch(e) { /* silent fail — submit button will retry everything */ }
+}
+
+function updateProgress() {
+  const done = holes.filter(h => h).length;
+  document.getElementById("progressFill").style.width = `${done/18*100}%`;
+  document.getElementById("progLabel").textContent = `${done}/18`;
+  document.getElementById("submitBtn").disabled = done === 0;
+}
+
+/* ── submit all ── */
+async function submitScores() {
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true; btn.textContent = "Saving…"; btn.classList.add("saving");
+  try {
+    // push every hole sequentially (server recalculates after each)
+    for (let i = 0; i < 18; i++) {
+      await fetch(`${BASE}/api/hole`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ matchId: activeMatch.id, holeIndex: i, result: holes[i], matchPin })
+      });
+    }
+    // fetch updated match
+    const r = await fetch(`${BASE}/api/match/${activeMatch.id}`);
+    const data = await r.json();
+    const jn = fmt(data.pa);
+    const en = fmt(data.pb);
+    document.getElementById("doneScore").textContent = `${jn} – ${en}`;
+    document.getElementById("statusBar").style.display = "none";
+    showScreen("scrDone");
+  } catch(e) {
+    btn.disabled = false; btn.textContent = "Submit"; btn.classList.remove("saving");
+    alert("Couldn't save scores — check your connection and try again.");
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  if (id !== "scrHoles") document.getElementById("statusBar").style.display = "none";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function fmt(x) {
+  if (x == null) return "–";
+  return Number.isInteger(x) ? String(x) : Number(x).toFixed(1);
+}
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// boot
+loadMatches();
+</script>
+</body>
+</html>

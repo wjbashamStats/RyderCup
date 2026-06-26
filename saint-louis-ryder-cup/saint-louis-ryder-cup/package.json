@@ -1,0 +1,17 @@
+{
+  "name": "slrc-server",
+  "version": "1.0.0",
+  "description": "Saint Louis Ryder Cup — live scoreboard backend",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.6.0",
+    "express": "^4.19.2"
+  }
+}
